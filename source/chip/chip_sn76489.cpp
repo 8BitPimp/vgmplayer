@@ -237,9 +237,9 @@ void sn76489_init(sn76489_t* psg, uint32_t clock)
 void sn76489_render(struct sn76489_t* psg, int16_t* stream, int32_t samples)
 {
     std::array<source_t, 5> source = {
-        source_t{sound_source_blit, &psg->pulse_[0], true, .3f},
-        source_t{sound_source_blit, &psg->pulse_[1], true, .3f},
-        source_t{sound_source_blit, &psg->pulse_[2], true, .3f},
+        source_t{sound_source_blit, &psg->pulse_[0], true, .4f},
+        source_t{sound_source_blit, &psg->pulse_[1], true, .4f},
+        source_t{sound_source_blit, &psg->pulse_[2], true, .4f},
         source_t{psg_noise, psg, true, .3f},
         source_t{nullptr, nullptr, false},
     };

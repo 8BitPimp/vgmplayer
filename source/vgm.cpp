@@ -21,7 +21,6 @@ uint32_t inline _toSamples(uint32_t count)
 // Gamegear/SegaMegadrive/BBC Micro
 void _write_sn76489(sVGMFile* vgm, uint8_t data)
 {
-    return;
     if (!vgm->chip_) {
         // construct on demand
         uint32_t clock = vgm->header->clock_sn76489 & 0x7fffffffu;

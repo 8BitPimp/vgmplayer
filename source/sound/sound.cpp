@@ -300,13 +300,13 @@ void sound_source_blit(float * dst,
     // while there are samples left to render
     while (length) {
         // do we need to output a blip
-        while (accum < 1.f) {
+        while (accum < 0.f) {
             // scale factor for this edge and volume
             const float scale = (edge&1) ? volume : -volume;
             // flip pulse edge
             edge ^= 0x1;
             // find lerp data
-            float    r = accum * float(c_blip_count);
+            float    r = (1.f+accum) * float(c_blip_count);
             uint32_t a = int32_t(r+0) & (c_blip_count-1);
             uint32_t b = int32_t(r+1) & (c_blip_count-1);
             float    l = _fpart(r);
@@ -316,8 +316,7 @@ void sound_source_blit(float * dst,
             // for all samples in the blip
             for (uint32_t i = 0; i<c_ring_size; ++i) {
                 // lerp blip value
-//                float v = _lerp(blip_a[i], blip_b[i], l);
-                float v = blip_a[i];
+                float v = _lerp(blip_a[i], blip_b[i], l);
                 // sum into blip ring buffer
                 ring[(index+i)%c_ring_size] += v * scale;
             }
@@ -325,7 +324,7 @@ void sound_source_blit(float * dst,
             accum += blit.hcycle_[edge&1];
         }
         // number of samples before next blip or end
-        uint32_t interval = uint32_t(accum);
+        uint32_t interval = uint32_t(accum+1.f);
         uint32_t count = _min<uint32_t>(length, interval);
         assert(count > 0);
         length -= count;
