@@ -20,30 +20,50 @@ struct vgm_header_t {
     uint32_t loop_offset;
     // number of samples in one loop, or 0 if no loop
     uint32_t loop_samples;
+
+    /* [VGM 1.01 additions:] */
+
     // rate of recording in hz. 50 pal, 60 ntsc;
     uint32_t rate;
+
+    /* [VGM 1.10 additions:] */
+
     // lfsr feedback pattern
     uint16_t feedback_sn76489;
     // lfsr width	- 15 sms2,gg,smd
     //				- 16 bbcmicro,segacomputer3000
     uint8_t width_sn76489;
+
+    /* [VGM 1.51 additions:] */
+
     // lfsr flags	- bit 0 frequency is 0x400
     //				- bit 1 output negate flag
     //				- bit 2 stereo
     // on(0)/off(1)
     //				- bit 3 /8 clock divider	on(0)/off(1)
     uint8_t flags_sn76489;
-    uint32_t _1;
-    uint32_t _2;
+
+    /* [VGM 1.10 additions:] */
+
+    uint32_t clock_ym2612;
+    uint32_t clock_ym2151;
+
+    /* [VGM 1.50 additions:] */
+
     // file offset to start of vgm data
     uint32_t offset_vgmdata;
-    uint32_t _3;
+
+    /* [VGM 1.51 additions:] */
+
+    uint32_t clock_sega_pcm;
 };
 #pragma pack(pop)
 
+typedef void (*vgm_chip_write_t)(struct vgm_chip_t*, uint32_t port, uint32_t reg, uint32_t data);
+
 struct vgm_chip_t {
     void (*set_clock)(uint32_t clock);
-    void (*write)(uint32_t port, uint32_t reg, uint32_t data);
+    vgm_chip_write_t write;
     void (*render)(int16_t* dst, uint32_t samples);
     void (*mute)();
     void* user;
@@ -59,35 +79,36 @@ struct vgm_chip_bank_t {
 };
 
 struct vgm_stream_t {
-    void * user;
-    uint8_t(*read8)();
-    uint8_t(*peek8)();
-    uint16_t(*read16)();
+    uint8_t (*read8)(struct vgm_stream_t*);
+    uint16_t (*read16)(struct vgm_stream_t*);
+    uint32_t (*read32)(struct vgm_stream_t*);
+    void (*read)(struct vgm_stream_t*, void* dst, uint32_t size);
+    void (*skip)(struct vgm_stream_t*, uint32_t size);
 };
 
 struct vgm_state_t {
-    const uint8_t* raw;
-    const uint8_t* stream;
-    size_t size;
-    uint32_t spill;
+    uint32_t delay;
     bool finished;
 };
 
 struct vgm_context_t {
     struct vgm_header_t header;
     struct vgm_state_t state;
-    struct vgm_stream_t stream;
+    struct vgm_stream_t* stream;
     struct vgm_chip_bank_t chips;
 };
 
 struct vgm_context_t* vgm_load(
-    const uint8_t * data,
-    size_t size,
+    struct vgm_stream_t* stream,
     struct vgm_chip_bank_t* chips);
 
 void vgm_free(struct vgm_context_t* vgm);
 
-void vgm_render(
-    struct vgm_context_t* cxt,
-    int16_t* dst,
-    uint32_t samples);
+bool vgm_advance(
+    struct vgm_context_t* vgm);
+
+uint32_t vgm_delay(
+    struct vgm_context_t* vgm);
+
+void vgm_mute(
+    struct vgm_context_t* vgm);

@@ -9,3 +9,4 @@ file(GLOB H_FILES *.h)
 file(GLOB C_FILES *.c)
 
 add_library(libvgm ${C_FILES} ${H_FILES})
+target_include_directories(libvgm PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
