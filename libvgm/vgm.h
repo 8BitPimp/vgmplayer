@@ -87,7 +87,7 @@ struct vgm_stream_t {
 };
 
 struct vgm_state_t {
-    uint32_t delay;
+    int32_t delay;
     bool finished;
 };
 

@@ -18,27 +18,9 @@ static uint32_t inline _toSamples(uint32_t count)
     return (uint32_t)(((uint64_t)count * rate) >> 10);
 }
 
-// silence all output from the output chips
-void vgm_mute(struct vgm_context_t* vgm)
+static uint32_t _vgm_to_millis(struct vgm_context_t* vgm, const uint32_t samples)
 {
-    assert(vgm);
-    if (vgm->chips.ym3812)
-        vgm->chips.ym3812->mute();
-    if (vgm->chips.sn76489)
-        vgm->chips.sn76489->mute();
-    if (vgm->chips.ym2612)
-        vgm->chips.ym2612->mute();
-    if (vgm->chips.nes_apu)
-        vgm->chips.nes_apu->mute();
-    if (vgm->chips.gb_dmg)
-        vgm->chips.gb_dmg->mute();
-    if (vgm->chips.pokey)
-        vgm->chips.pokey->mute();
-}
-
-static uint32_t _vgm_to_millis(struct vgm_context_t* vgm, const uint32_t time)
-{
-    return time;
+    return (samples * 10) / 441;
 }
 
 void _vgm_data_block(
@@ -61,6 +43,26 @@ static void _vgm_chip_write(
         assert(chip->write);
         chip->write(chip, port, reg, data);
     }
+}
+
+static void _vgm_chip_mute(struct vgm_chip_t* chip)
+{
+    if (chip) {
+        assert(chip->mute);
+        chip->mute();
+    }
+}
+
+// silence all output from the output chips
+void vgm_mute(struct vgm_context_t* vgm)
+{
+    assert(vgm);
+    _vgm_chip_mute(vgm->chips.ym3812);
+    _vgm_chip_mute(vgm->chips.sn76489);
+    _vgm_chip_mute(vgm->chips.ym2612);
+    _vgm_chip_mute(vgm->chips.nes_apu);
+    _vgm_chip_mute(vgm->chips.gb_dmg);
+    _vgm_chip_mute(vgm->chips.pokey);
 }
 
 // parse a single item from the data stream
@@ -248,17 +250,26 @@ void vgm_free(struct vgm_context_t* vgm)
 bool vgm_advance(struct vgm_context_t* vgm)
 {
     assert(vgm);
-    uint32_t delay = vgm->state.delay;
+    // keep only error from last conversion
+    {
+        // convert to milliseconds
+        const uint32_t ms = (vgm->state.delay * 10) / 441;
+        // convert back to samples and remove
+        vgm->state.delay -= ((ms * 441) / 10);
+        assert(vgm->state.delay>=0);
+    }
+    uint32_t samples = 0;
     uint32_t watchdog = 1000;
-    // while we have no delay keep parsing
-    while (delay == 0 && !vgm->state.finished) {
-        if (!_vgm_parse_single(vgm, &delay)) {
+    // while we have no new samples keep parsing
+    while (samples == 0 && !vgm->state.finished) {
+        if (!_vgm_parse_single(vgm, &samples)) {
             vgm->state.finished = true;
             return false;
         }
         assert(--watchdog);
     }
-    vgm->state.delay = delay;
+    // accumulate
+    vgm->state.delay += samples;
     return true;
 }
 

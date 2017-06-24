@@ -67,6 +67,25 @@ bool vgm_fstream_open(const char* path, struct vgm_fstream_t* out)
     return true;
 }
 
+static void _vgm_write_ym3812(
+    struct vgm_chip_t* chip,
+    uint32_t port,
+    uint32_t reg,
+    uint32_t val)
+{
+    printf("%02x %02x %02x\n", port, reg, val);
+}
+
+static void _vgm_mute_ym3812(
+    struct vgm_chip_t* chip)
+{
+}
+
+void delay_ms(uint32_t ms) {
+    extern void __stdcall Sleep(unsigned long ms);
+    Sleep(ms);
+}
+
 int main(const int argc, char** args)
 {
     if (argc < 2) {
@@ -80,8 +99,17 @@ int main(const int argc, char** args)
         return 2;
     }
 
+    struct vgm_chip_t chip_ym3812 = {
+        NULL,
+        _vgm_write_ym3812,
+        NULL,
+        _vgm_mute_ym3812,
+        NULL
+    };
+
     struct vgm_chip_bank_t chips;
     memset(&chips, 0, sizeof(chips));
+    chips.ym3812 = &chip_ym3812;
 
     struct vgm_context_t* vgm = vgm_load(stream, &chips);
     if (!vgm) {
@@ -90,10 +118,9 @@ int main(const int argc, char** args)
 
     while (vgm_advance(vgm)) {
         const uint32_t delay = vgm_delay(vgm);
-        if (delay==0) {
-            break;
+        if (delay > 0) {
+            delay_ms(delay);
         }
-
     }
     return 0;
 }
