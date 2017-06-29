@@ -1,6 +1,12 @@
 #pragma once
-#include <stdbool.h>
-#include <stdint.h>
+
+typedef unsigned long uint64_t;
+typedef unsigned int uint32_t;
+typedef unsigned short uint16_t;
+typedef unsigned char uint8_t;
+
+typedef signed int int32_t;
+typedef signed short int16_t;
 
 #pragma pack(push, 1)
 struct vgm_header_t {
@@ -60,12 +66,14 @@ struct vgm_header_t {
 #pragma pack(pop)
 
 typedef void (*vgm_chip_write_t)(struct vgm_chip_t*, uint32_t port, uint32_t reg, uint32_t data);
+typedef void (*vgm_chip_mute_t)(struct vgm_chip_t* chip);
+
 
 struct vgm_chip_t {
     void (*set_clock)(uint32_t clock);
     vgm_chip_write_t write;
     void (*render)(int16_t* dst, uint32_t samples);
-    void (*mute)();
+    vgm_chip_mute_t mute;
     void* user;
 };
 

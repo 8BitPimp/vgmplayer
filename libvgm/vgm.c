@@ -49,7 +49,7 @@ static void _vgm_chip_mute(struct vgm_chip_t* chip)
 {
     if (chip) {
         assert(chip->mute);
-        chip->mute();
+        chip->mute(chip);
     }
 }
 
@@ -192,6 +192,7 @@ static bool _vgm_parse_single(struct vgm_context_t* vgm, uint32_t* delay)
             const uint8_t data1 = stream->read8(stream);
             *delay += _toSamples((data1 & 0x0F) + 1);
         } else {
+			printf("unknown opcode: 0x%02x", (int)opcode);
             /* unknown opcode */
             vgm->state.finished = true;
             vgm_mute(vgm);
@@ -208,7 +209,8 @@ struct vgm_context_t* vgm_load(
 {
     assert(stream && chips);
     // allocate a new vgm context
-    struct vgm_context_t* vgm = malloc(sizeof(struct vgm_context_t));
+    struct vgm_context_t* vgm =
+		(struct vgm_context_t*)malloc(sizeof(struct vgm_context_t));
     if (!vgm) {
         return NULL;
     }
