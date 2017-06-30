@@ -72,54 +72,57 @@ static bool _vgm_parse_single(struct vgm_context_t* vgm, uint32_t* delay)
     assert(stream);
     // parse this vgm opcode
     const uint8_t opcode = vgm->stream->read8(stream);
+
+    printf("%02x\n", opcode);
+
     switch (opcode) {
     case (0x4f):
     case (0x50): {
         // write to sn76489
         const uint8_t data1 = stream->read8(stream);
         _vgm_chip_write(vgm->chips.sn76489, 0, 0, data1);
-        break;
+        return true;
     }
     case (0x52): {
         // write to YM2612 PORT 1
         const uint8_t data1 = stream->read8(stream);
         const uint8_t data2 = stream->read8(stream);
         _vgm_chip_write(vgm->chips.ym2612, 0, data1, data2);
-        break;
+        return true;
     }
     case (0x53): {
         // write to YM2612 PORT 2
         const uint8_t data1 = stream->read8(stream);
         const uint8_t data2 = stream->read8(stream);
         _vgm_chip_write(vgm->chips.ym2612, 1, data1, data2);
-        break;
+        return true;
     }
     case (0x5A): {
         // write to ADLIB
         const uint8_t data1 = stream->read8(stream);
         const uint8_t data2 = stream->read8(stream);
         _vgm_chip_write(vgm->chips.ym3812, 0, data1, data2);
-        break;
+        return true;
     }
     case (0x61): {
         // wait dd dd samples
         const uint16_t samples = stream->read16(stream);
         *delay += _toSamples(samples);
-        break;
+        return true;
     }
     case (0x62):
         // wait 735 samples
         *delay += _toSamples(735);
-        break;
+        return true;
     case (0x63):
         // wait 882 sample
         *delay += _toSamples(882);
-        break;
+        return true;
     case (0x66):
         // end sound data
         vgm->state.finished = true;
         vgm_mute(vgm);
-        break;
+        return true;
     case (0x67): {
         // data block
         uint8_t data1 = stream->read8(stream);
@@ -127,31 +130,45 @@ static bool _vgm_parse_single(struct vgm_context_t* vgm, uint32_t* delay)
         const uint8_t tt = stream->read8(stream);
         const uint32_t ss = stream->read32(stream);
         _vgm_data_block(vgm, stream, tt, ss);
-        break;
+        return true;
     }
     case (0xB4): {
         // write to the NES APU
         const uint8_t data1 = stream->read8(stream);
         const uint8_t data2 = stream->read8(stream);
         _vgm_chip_write(vgm->chips.nes_apu, 0, data1, data2);
-        break;
+        return true;
     }
     case (0xB3): {
         // write to the GameBoy DMG
         const uint8_t data1 = stream->read8(stream);
         const uint8_t data2 = stream->read8(stream);
         _vgm_chip_write(vgm->chips.gb_dmg, 0, data1, data2);
-        break;
+        return true;
     }
     case (0xBB): {
         // write to the atari pokey
         const uint8_t data1 = stream->read8(stream);
         const uint8_t data2 = stream->read8(stream);
         _vgm_chip_write(vgm->chips.pokey, 0, data1, data2);
-        break;
+        return true;
     }
     // reserved opcodes
     default:
+        // high nibble decoding
+        switch (opcode & 0xF0) {
+        case 0x70:
+            // 0x7n: wait n+1 samples, n can range from 0 to 15.
+            *delay += _toSamples((opcode & 0x0F) + 1);
+            return true;
+        case 0x80:
+            // 0x8n: YM2612 port 0 address 2A write from the data bank, then wait
+            //       n samples; n can range from 0 to 15. Note that the wait is n,
+            //       NOT n+1. (Note: Written to first chip instance only.)
+            // _vgm_chip_write(vgm->chips.ym2612, 0, 0x2a, /* data bank */);
+            *delay += _toSamples(opcode & 0x0F);
+            return true;
+        }
         // reserved 1 byte operand range
         if (opcode >= 0x30 && opcode <= 0x3f) {
             stream->skip(stream, 1);
@@ -187,12 +204,8 @@ static bool _vgm_parse_single(struct vgm_context_t* vgm, uint32_t* delay)
             stream->skip(stream, 4);
             return true;
         }
-        // single byte sample delay
-        if ((opcode & 0xF0) == 0x70) {
-            const uint8_t data1 = stream->read8(stream);
-            *delay += _toSamples((data1 & 0x0F) + 1);
-        } else {
-			printf("unknown opcode: 0x%02x", (int)opcode);
+        {
+            printf("unknown opcode: 0x%02x", (int)opcode);
             /* unknown opcode */
             vgm->state.finished = true;
             vgm_mute(vgm);
@@ -209,8 +222,7 @@ struct vgm_context_t* vgm_load(
 {
     assert(stream && chips);
     // allocate a new vgm context
-    struct vgm_context_t* vgm =
-		(struct vgm_context_t*)malloc(sizeof(struct vgm_context_t));
+    struct vgm_context_t* vgm = (struct vgm_context_t*)malloc(sizeof(struct vgm_context_t));
     if (!vgm) {
         return NULL;
     }
@@ -258,7 +270,7 @@ bool vgm_advance(struct vgm_context_t* vgm)
         const uint32_t ms = (vgm->state.delay * 10) / 441;
         // convert back to samples and remove
         vgm->state.delay -= ((ms * 441) / 10);
-        assert(vgm->state.delay>=0);
+        assert(vgm->state.delay >= 0);
     }
     uint32_t samples = 0;
     uint32_t watchdog = 1000;

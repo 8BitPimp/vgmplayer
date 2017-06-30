@@ -1,5 +1,8 @@
 #pragma once
 
+#if HAS_STDINT
+#include <stdint.h>
+#else
 typedef unsigned long uint64_t;
 typedef unsigned int uint32_t;
 typedef unsigned short uint16_t;
@@ -7,6 +10,7 @@ typedef unsigned char uint8_t;
 
 typedef signed int int32_t;
 typedef signed short int16_t;
+#endif // HAS_STDINT
 
 #pragma pack(push, 1)
 struct vgm_header_t {
