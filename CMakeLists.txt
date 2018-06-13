@@ -3,3 +3,4 @@ project(vgmplayer)
 
 add_subdirectory(libvgm)
 add_subdirectory(playvgm)
+add_subdirectory(dumpvgm)

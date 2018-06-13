@@ -1,16 +1,7 @@
 #pragma once
+#include <memory>
 
-#define HAS_STDINT
-#ifdef HAS_STDINT
 #include <stdint.h>
-#else
-typedef unsigned long uint64_t;
-typedef unsigned int uint32_t;
-typedef unsigned short uint16_t;
-typedef unsigned char uint8_t;
-typedef signed int int32_t;
-typedef signed short int16_t;
-#endif
 
 #pragma pack(push, 1)
 struct vgm_header_t {
@@ -69,16 +60,11 @@ struct vgm_header_t {
 };
 #pragma pack(pop)
 
-typedef void (*vgm_chip_write_t)(struct vgm_chip_t*, uint32_t port, uint32_t reg, uint32_t data);
-typedef void (*vgm_chip_mute_t)(struct vgm_chip_t* chip);
-
-
 struct vgm_chip_t {
-    void (*set_clock)(uint32_t clock);
-    vgm_chip_write_t write;
-    void (*render)(int16_t* dst, uint32_t samples);
-    vgm_chip_mute_t mute;
-    void* user;
+    virtual void set_clock(uint32_t clock){};
+    virtual void write(uint32_t port, uint32_t reg, uint32_t data){};
+    virtual void render(int16_t* dst, uint32_t samples){};
+    virtual void mute(){};
 };
 
 struct vgm_chip_bank_t {
@@ -91,11 +77,11 @@ struct vgm_chip_bank_t {
 };
 
 struct vgm_stream_t {
-    uint8_t (*read8)(struct vgm_stream_t*);
-    uint16_t (*read16)(struct vgm_stream_t*);
-    uint32_t (*read32)(struct vgm_stream_t*);
-    void (*read)(struct vgm_stream_t*, void* dst, uint32_t size);
-    void (*skip)(struct vgm_stream_t*, uint32_t size);
+    virtual uint8_t read8() = 0;
+    virtual uint16_t read16() = 0;
+    virtual uint32_t read32() = 0;
+    virtual void read(void* dst, uint32_t size) = 0;
+    virtual void skip(uint32_t size) = 0;
 };
 
 struct vgm_state_t {
@@ -119,7 +105,10 @@ void vgm_free(struct vgm_context_t* vgm);
 bool vgm_advance(
     struct vgm_context_t* vgm);
 
-uint32_t vgm_delay(
+uint32_t vgm_delay_samples(
+    struct vgm_context_t* vgm);
+
+uint32_t vgm_delay_ms(
     struct vgm_context_t* vgm);
 
 void vgm_mute(
