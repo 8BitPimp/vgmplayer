@@ -1,0 +1,39 @@
+***********************************************
+* VGM music package                           *
+* http://vgm.mdscene.net/                     *
+***********************************************
+Game name:           Hellfire
+System:              Toaplan 1
+Music hardware:      YM3812
+
+Music author:        Tatsuya Uemura
+Game developer:      Toplan
+Game publisher:      Taito Corporation
+Game release date:   1989
+
+Package created by:  Sonic of 8!
+Package version:     1.00
+
+Song list, in approximate game order:
+Song name                           Length:
+                                    Total  Loop
+01 Coin                             0:03   -
+02 Ready to Go ~ Captain Lancer     1:40   1:27
+03 Egypt                            1:58   1:56
+04 Jumping Roll                     1:04   1:03
+05 Mystic Green                     1:55   1:47
+06 In Side Drive                    1:46   1:42
+07 Last Dance                       1:24   1:17
+08 Game is Over                     0:06   -
+09 Requiem                          1:00   -
+10 Get a Chance                     0:13   -
+
+Total length                       11:08  20:21
+
+
+Notes:
+The Coin sound is the same as Zero Wing. Why?
+
+
+Package history:
+1.00 2012-06-01 Sonic of 8!: Initial release.

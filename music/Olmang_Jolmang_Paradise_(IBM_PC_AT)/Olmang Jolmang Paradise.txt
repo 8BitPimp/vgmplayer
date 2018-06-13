@@ -1,0 +1,63 @@
+***********************************************
+* VGM music package                           *
+* http://vgmrips.net/                         *
+***********************************************
+Game name:           Olmang Jolmang Paradise
+System:              IBM PC/AT
+OS:                  DOS
+Music hardware:      Adlib/OPL2 (YM3812)
+
+Music author:        D.A.C.
+ in particular:      Seung-Hwan Ro,
+                     Myung-Jin Ahn
+Game developer:      Family Production
+Game publisher:      Gameland
+Game release date:   1995-09-02
+
+Package created by:  dj.tuBIG/MaliceX
+Package version:     1.02
+
+Song list, in approximate game order:
+Song name                           Length:
+                                    Total  Loop
+01 Family Logo                      0:02   -
+02 Concentration [Opening 1]        1:32   -
+03 Unconsciousness [Opening 2]      0:14   -
+04 Paradise Thema [Title]           1:26   -
+05 Time To Fight [Select]           0:23   0:23
+06 Illusion Blaze Arrange
+   [Stage 1-1]                      1:37   1:37
+07 You Will Die [Boss]              0:32   0:32
+08 Mother Earth [Stage 1-2]         1:20   1:20
+09 Interrupt Arrange [Stage 2]      0:39   0:39
+10 Wonderful Nature [Stage 3]       1:30   1:30
+11 Shake Land [Stage 4]             1:23   1:23
+12 Fantastic Sea World [Stage 5]    1:22   1:22
+13 Continuous Attack [Stage 6]      1:14   1:14
+14 I'm Your Death [Stage 7]         0:31   0:31
+15 Enjoy Our Victory [Stage Clear]  0:06   -
+16 Go Forward [Game Clear]          0:07   -
+17 Never Give Up [Continue]         0:27   0:27
+18 Sound From The Heaven
+   [Game Over]                      0:08   -
+19 Make Your Choise [Shop]          0:47   0:47
+20 Best of Best [Race]              0:51   0:51
+21 Ending                           1:11   -
+
+Total Length                       17:21  29:55
+
+
+Notes:
+Ripped using Valley Bell's DOSBox 0.74 mod.
+IMS song data extracted via Hex editor, and
+played via OCPLAY 1.0.
+
+Special thanks to Ted for information on
+D.A.C.
+
+
+Package history:
+1.00 2013-11-25 dj.tuBIG/MaliceX: Initial rel.
+1.01 2015-10-03 dj.tuBIG/MaliceX: DAC real name
+1.02 2015-12-03 Valley Bell: Added exact
+ origin to note tag in some of the songs.
