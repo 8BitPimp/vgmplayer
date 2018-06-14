@@ -1,6 +1,7 @@
 add_executable(playvgm
     main.cpp
-    serial.c
-    serial.h)
+    dev_opl_port.cpp
+    dev_serial.cpp)
 target_link_libraries(playvgm
-    libvgm)
+    libvgm
+    libserial)

@@ -1,66 +1,13 @@
 #pragma once
+#include <cstdint>
 #include <memory>
 
-#include <stdint.h>
-
-#pragma pack(push, 1)
-struct vgm_header_t {
-    // "Vgm " (0x56, 0x67, 0x6d, 0x20)
-    uint32_t vgm_ident;
-    // relative offset to end of file
-    uint32_t offset_eof;
-    uint32_t version;
-    // input clock rate in hz, typical 3579545
-    uint32_t clock_sn76489;
-    uint32_t clock_ym2413;
-    // relative offset to GD3 tag; 0 if no tag;
-    uint32_t offset_gd3;
-    // Total of all wait values in the file.
-    uint32_t total_samples;
-    // relative offset of the loop point, or 0 if no loop.
-    uint32_t loop_offset;
-    // number of samples in one loop, or 0 if no loop
-    uint32_t loop_samples;
-
-    /* [VGM 1.01 additions:] */
-
-    // rate of recording in hz. 50 pal, 60 ntsc;
-    uint32_t rate;
-
-    /* [VGM 1.10 additions:] */
-
-    // lfsr feedback pattern
-    uint16_t feedback_sn76489;
-    // lfsr width	- 15 sms2,gg,smd
-    //				- 16 bbcmicro,segacomputer3000
-    uint8_t width_sn76489;
-
-    /* [VGM 1.51 additions:] */
-
-    // lfsr flags	- bit 0 frequency is 0x400
-    //				- bit 1 output negate flag
-    //				- bit 2 stereo
-    // on(0)/off(1)
-    //				- bit 3 /8 clock divider	on(0)/off(1)
-    uint8_t flags_sn76489;
-
-    /* [VGM 1.10 additions:] */
-
-    uint32_t clock_ym2612;
-    uint32_t clock_ym2151;
-
-    /* [VGM 1.50 additions:] */
-
-    // file offset to start of vgm data
-    uint32_t offset_vgmdata;
-
-    /* [VGM 1.51 additions:] */
-
-    uint32_t clock_sega_pcm;
-};
-#pragma pack(pop)
+#include "vgm_header.h"
 
 struct vgm_chip_t {
+
+    virtual ~vgm_chip_t() {};
+
     virtual void set_clock(uint32_t clock){};
     virtual void write(uint32_t port, uint32_t reg, uint32_t data){};
     virtual void render(int16_t* dst, uint32_t samples){};
@@ -68,6 +15,17 @@ struct vgm_chip_t {
 };
 
 struct vgm_chip_bank_t {
+
+    vgm_chip_bank_t()
+        : ym3812(nullptr)
+        , sn76489(nullptr)
+        , ym2612(nullptr)
+        , nes_apu(nullptr)
+        , gb_dmg(nullptr)
+        , pokey(nullptr)
+    {
+    }
+
     struct vgm_chip_t* ym3812;
     struct vgm_chip_t* sn76489;
     struct vgm_chip_t* ym2612;
@@ -77,6 +35,9 @@ struct vgm_chip_bank_t {
 };
 
 struct vgm_stream_t {
+
+    virtual ~vgm_stream_t() {};
+
     virtual uint8_t read8() = 0;
     virtual uint16_t read16() = 0;
     virtual uint32_t read32() = 0;
@@ -84,35 +45,45 @@ struct vgm_stream_t {
     virtual void skip(uint32_t size) = 0;
 };
 
-struct vgm_state_t {
-    int32_t delay;
-    bool finished;
+struct vgm_t {
+
+    vgm_t()
+        : _stream(nullptr)
+        , _delay(0)
+        , _finished(true)
+    {
+    }
+
+    bool load(
+        struct vgm_stream_t* stream,
+        struct vgm_chip_bank_t* chips);
+
+    bool advance();
+
+    // 
+    uint32_t get_delay_samples();
+
+    // return milli before next vgm event
+    uint32_t get_delay_ms();
+
+    // mute all chip
+    void mute();
+
+    // has the vgm streeam finished
+    bool finished();
+
+protected:
+    bool _vgm_parse_single(uint32_t*);
+    void _vgm_data_block(uint8_t type, uint32_t size);
+
+    // vgm data stream
+    struct vgm_stream_t* _stream;
+    // samples before next vgm event
+    int32_t _delay;
+    // vgm stream has ended
+    bool _finished;
+    // bank of chip devices
+    struct vgm_chip_bank_t _chips;
+    // vgm stream header
+    struct vgm_header_t _header;
 };
-
-struct vgm_context_t {
-    struct vgm_header_t header;
-    struct vgm_state_t state;
-    struct vgm_stream_t* stream;
-    struct vgm_chip_bank_t chips;
-};
-
-struct vgm_context_t* vgm_load(
-    struct vgm_stream_t* stream,
-    struct vgm_chip_bank_t* chips);
-
-void vgm_free(struct vgm_context_t* vgm);
-
-bool vgm_advance(
-    struct vgm_context_t* vgm);
-
-uint32_t vgm_delay_samples(
-    struct vgm_context_t* vgm);
-
-uint32_t vgm_delay_ms(
-    struct vgm_context_t* vgm);
-
-void vgm_mute(
-    struct vgm_context_t* vgm);
-
-bool vgm_finished(
-    struct vgm_context_t* vgm);
