@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include <string>
+#include <vector>
 
 #include "vgm.h"
 #include "vgm_fstream.h"
@@ -18,7 +19,14 @@ enum {
 
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
+#define NEW_FMT 1
+
 struct vgm_ym3812_t : public vgm_chip_t {
+
+    struct write_t {
+      uint32_t reg;
+      uint32_t data;
+    };
 
     vgm_ym3812_t(const char* path)
         : _fd(fopen(path, "wb"))
@@ -37,24 +45,66 @@ struct vgm_ym3812_t : public vgm_chip_t {
 
     void write(uint32_t port, uint32_t reg, uint32_t data)
     {
-        fputc(MARK_WRITE, _fd);
-        fwrite(&port, 4, 1, _fd);
-        fwrite(&reg, 4, 1, _fd);
-        fwrite(&data, 4, 1, _fd);
+        // todo: buffer writes so we can batch them and emit just one byte
+        //       with the batch size followed by an implicit delay removing
+        //       the need for any markers
+#if NEW_FMT
+        const write_t w = {
+            reg, data
+        };
+        _writes.push_back(w);
+#else
+        _write(MARK_WRITE);
+        _write(port);
+        _write(reg);
+        _write(data);
+#endif
     };
 
-    void delay(uint32_t data)
+    void delay(uint32_t samples)
     {
-        fputc(MARK_DELAY, _fd);
-        fwrite(&data, 4, 1, _fd);
+#if NEW_FMT
+        if (samples) {
+            _write(_writes.size());
+            for (uint32_t i = 0; i < _writes.size(); ++i) {
+                _write(_writes[i].reg);
+                _write(_writes[i].data);
+            }
+            _writes.clear();
+            _write(samples);
+        }
+#else
+        _write(MARK_DELAY);
+        _write(samples);
+#endif
     }
 
     void eof()
     {
-        fputc(MARK_EOF, _fd);
+#if NEW_FMT
+#else
+        _write(MARK_EOF);
+#endif
     }
 
 protected:
+    void _write(uint32_t value)
+    {
+        // todo: flip this to encode backwards to simplify decoder
+
+        uint8_t out = 0;
+        do {
+            out = value & 0x7f;
+            value >>= 7;
+            if (value == 0) {
+                out |= 0x80;
+            }
+            fwrite(&out, 1, 1, _fd);
+        } while (value);
+    }
+
+    std::vector<write_t> _writes;
+
     FILE* _fd;
 };
 
