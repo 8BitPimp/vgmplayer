@@ -148,6 +148,12 @@ bool vgm_t::_vgm_parse_single(uint32_t* delay)
         _vgm_chip_write(_chips.pokey, 0, data1, data2);
         break;
     }
+    case (0xE0): {
+        // PCM data bank, block type 0
+        const uint32_t data = _stream->read32();
+        // todo
+        break;
+    }
     // reserved opcodes
     default:
         // reserved 1 byte operand range
@@ -246,6 +252,7 @@ bool vgm_t::load(
 
 bool vgm_t::advance()
 {
+#if 0
     // keep only error from last conversion
     {
         // convert to milliseconds
@@ -255,6 +262,9 @@ bool vgm_t::advance()
         _delay -= ((ms * 441) / 10);
         assert(_delay >= 0);
     }
+#else
+    _delay = 0;
+#endif
     uint32_t samples = 0;
     uint32_t watchdog = 1000;
     // while we have no new samples keep parsing

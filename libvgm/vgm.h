@@ -11,6 +11,7 @@ struct vgm_chip_t {
     virtual void set_clock(uint32_t clock){};
     virtual void write(uint32_t port, uint32_t reg, uint32_t data){};
     virtual void render(int16_t* dst, uint32_t samples){};
+    virtual void render(int32_t* dst, uint32_t samples){};
     virtual void mute(){};
 };
 
@@ -60,7 +61,7 @@ struct vgm_t {
 
     bool advance();
 
-    // 
+    // return number of samples till next vgm event
     uint32_t get_delay_samples();
 
     // return milli before next vgm event
@@ -71,6 +72,11 @@ struct vgm_t {
 
     // has the vgm streeam finished
     bool finished();
+
+    // return chip bank
+    const vgm_chip_bank_t &chips() const {
+      return _chips;
+    }
 
 protected:
     bool _vgm_parse_single(uint32_t*);

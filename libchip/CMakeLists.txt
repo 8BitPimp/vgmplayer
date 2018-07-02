@@ -1,0 +1,2 @@
+add_subdirectory(mame_sn76489)
+add_subdirectory(mame_ym2612)
