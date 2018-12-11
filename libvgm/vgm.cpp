@@ -11,7 +11,7 @@
 #define MIN(A, B) (((A) < (B)) ? (A) : (B))
 #endif
 
-void debug_msg(const char *fmt, ...) {}
+void debug_msg(const char* fmt, ...) {}
 
 // convert wait count to audio samples
 static uint32_t inline _to_samples(uint32_t count)
@@ -70,6 +70,9 @@ bool vgm_t::_vgm_parse_single(uint32_t* delay)
     assert(_stream);
     // parse this vgm opcode
     const uint8_t opcode = _stream->read8();
+
+    printf("%02x\n", opcode);
+
     switch (opcode) {
     case (0x4f):
     case (0x50): {
@@ -204,6 +207,11 @@ bool vgm_t::_vgm_parse_single(uint32_t* delay)
                 break;
             }
         }
+        // misc
+        if (opcode == 0xa0) {
+            _stream->skip(4);
+            break;
+        }
         // unknown opcode
         {
             debug_msg("unknown opcode: 0x%02x", (int)opcode);
@@ -216,7 +224,7 @@ bool vgm_t::_vgm_parse_single(uint32_t* delay)
     return true;
 }
 
-bool vgm_t::load(
+bool vgm_t::init(
     struct vgm_stream_t* stream,
     struct vgm_chip_bank_t* chips)
 {
@@ -229,20 +237,29 @@ bool vgm_t::load(
     // copy over the vgm header
     const size_t vgm_hdr_size = sizeof(struct vgm_header_t);
     _stream->read(&(_header), vgm_hdr_size);
+    _stream->rewind();
     uint32_t to_skip = 0;
     // check VGM header
     if (memcmp(&(_header.vgm_ident), "Vgm ", 4) != 0) {
         return false;
     }
+
     // find start of music data
-    if (_header.offset_vgmdata == 0) {
-        const uint32_t start = 0x40;
-        to_skip = start - vgm_hdr_size;
+    if (_header.version < 150) {
+        to_skip = 0x40;
     } else {
-        const struct vgm_header_t* header = &_header;
-        const uint32_t start = 0x34 + _header.offset_vgmdata;
-        to_skip = start - vgm_hdr_size;
+        if (_header.offset_vgmdata == 0) {
+            to_skip = sizeof(_header);
+        } else {
+            const uint32_t start = 0x34 + _header.offset_vgmdata;
+            to_skip = start;
+            if (start < 0x100) {
+                size_t size = sizeof(_header) - start;
+                memset(((uint8_t*)&_header) + start, 0, size);
+            }
+        }
     }
+
     // skip to start of vgm stream
     if (to_skip) {
         _stream->skip(to_skip);

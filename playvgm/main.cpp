@@ -94,6 +94,11 @@ struct vgm_render_t {
         return true;
     }
 
+    void stop() {
+      SDL_CloseAudio();
+      SDL_Quit();
+    }
+
     bool finished() const
     {
         return _finished;
@@ -105,7 +110,7 @@ struct vgm_render_t {
         std::array<int32_t, 1024> mixdown;
         mixdown.fill(0);
         // while there are samples to render
-        while (samples) {
+        while (samples && !_finished) {
             // find max samples we can render
             const uint32_t chunk = std::min<uint32_t>({ _delay, samples, mixdown.size() }) & MASK;
             // render any needed samples
@@ -137,12 +142,12 @@ protected:
         for (; count; --count, ++src, ++dst) {
             // very basic automatic gain reduction
             const int32_t x = (*src * _gain) >> 12;
-            _gain = std::max<int32_t>(_gain - ((x > 0x7fff) ? (1 | ((x-0x7fff) >> 4)) : 0), 0);
+            _gain = std::max<int32_t>(_gain - ((x > 0x7fff) ? (1 | ((x - 0x7fff) >> 4)) : 0), 0);
             *dst = std::min<int32_t>(
                 std::max<int32_t>(x, -0x7ffe),
                 0x7ffe);
             if ((count & 0x3f) == 0) {
-              _gain += 1;
+                _gain += 1;
             }
         }
     }
@@ -304,39 +309,75 @@ protected:
 
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
+struct chip_sn76489_serial_t : public vgm_chip_t {
+
+    chip_sn76489_serial_t()
+        : _inst(nullptr)
+    {
+    }
+
+    void write(uint32_t port, uint32_t reg, uint32_t data) override
+    {
+        if (_inst) {
+            printf("%02x\n", data);
+        }
+    };
+
+protected:
+    void* _inst;
+};
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
 int main(const int argc, char** args)
 {
     if (argc < 2) {
-      // well we need a song to play
-      return 1;
+        // well we need a song to play
+        return 1;
     }
 
     vgm_fstream_t stream(args[1]);
     if (!stream.valid()) {
-        //
-    }
-
-    vgm_chip_bank_t bank;
-    bank.ym2612 = new chip_ym2612_t;
-    bank.sn76489 = new chip_sn76489_t;
-
-    vgm_t vgm;
-    if (!vgm.load(&stream, &bank)) {
-        //
-    }
-
-#if 0
-    vgm_playback_t playback(vgm);
-    playback.run();
-#else
-    vgm_render_t render(vgm);
-    if (!render.init(44100)) {
         return 1;
     }
-    while (!render.finished()) {
-        SDL_Delay(1);
+
+    bool playback = false;
+    if (playback) {
+        // playback
+
+        vgm_chip_bank_t bank;
+        bank.sn76489 = new chip_sn76489_serial_t;
+
+        vgm_t vgm;
+        if (!vgm.init(&stream, &bank)) {
+            return 1;
+        }
+
+        vgm_playback_t playback(vgm);
+        playback.run();
+
+    } else {
+        // render
+
+        vgm_chip_bank_t bank;
+        bank.ym2612 = new chip_ym2612_t;
+        bank.sn76489 = new chip_sn76489_t;
+
+        vgm_t vgm;
+        if (!vgm.init(&stream, &bank)) {
+            return 1;
+        }
+
+        vgm_render_t render(vgm);
+        if (!render.init(44100)) {
+            return 1;
+        }
+        while (!render.finished()) {
+            SDL_Delay(1);
+        }
+
+        render.stop();
     }
-#endif
 
     return 0;
 }

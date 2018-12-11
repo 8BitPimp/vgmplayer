@@ -48,7 +48,8 @@ vgm_chip_t* create_dev_serial(uint16_t port)
 {
     serial_t* serial = serial_open(SERIAL_COM(port), 9600);
     if (!serial) {
-//        printf("Unable to open serial port");
         return nullptr;
     }
+    dev_serial_t *dev = new dev_serial_t{serial};
+    return dev;
 }

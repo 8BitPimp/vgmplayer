@@ -143,7 +143,7 @@ int main(const int argc, char** args)
     chips.ym3812 = &chip;
 
     vgm_t vgm;
-    if (!vgm.load(stream.get(), &chips)) {
+    if (!vgm.init(stream.get(), &chips)) {
         return RET_BAD_LOAD;
     }
 

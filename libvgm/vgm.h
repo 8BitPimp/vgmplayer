@@ -44,6 +44,7 @@ struct vgm_stream_t {
     virtual uint32_t read32() = 0;
     virtual void read(void* dst, uint32_t size) = 0;
     virtual void skip(uint32_t size) = 0;
+    virtual void rewind() = 0;
 };
 
 struct vgm_t {
@@ -55,7 +56,7 @@ struct vgm_t {
     {
     }
 
-    bool load(
+    bool init(
         struct vgm_stream_t* stream,
         struct vgm_chip_bank_t* chips);
 

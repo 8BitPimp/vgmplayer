@@ -53,6 +53,10 @@ struct vgm_fstream_t : public vgm_stream_t {
         fseek(_fd, size, SEEK_CUR);
     }
 
+    void rewind() override {
+      ::rewind(_fd);
+    }
+
 protected:
     FILE* _fd;
 };
