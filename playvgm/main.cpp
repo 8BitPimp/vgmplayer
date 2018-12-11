@@ -9,6 +9,7 @@
 #define _SDL_main_h
 #include <SDL.h>
 
+#include "serial.h"
 #include "vgm.h"
 #include "vgm_fstream.h"
 
@@ -94,9 +95,10 @@ struct vgm_render_t {
         return true;
     }
 
-    void stop() {
-      SDL_CloseAudio();
-      SDL_Quit();
+    void stop()
+    {
+        SDL_CloseAudio();
+        SDL_Quit();
     }
 
     bool finished() const
@@ -311,19 +313,29 @@ protected:
 
 struct chip_sn76489_serial_t : public vgm_chip_t {
 
-    chip_sn76489_serial_t()
+    chip_sn76489_serial_t(int port)
         : _inst(nullptr)
     {
+        _serial = serial_open(port, 31250);
+    }
+
+    ~chip_sn76489_serial_t()
+    {
+        if (_serial) {
+            serial_close(_serial);
+        }
     }
 
     void write(uint32_t port, uint32_t reg, uint32_t data) override
     {
-        if (_inst) {
+        if (_serial) {
             printf("%02x\n", data);
+            serial_send(_serial, &data, sizeof(data));
         }
     };
 
 protected:
+    struct serial_t* _serial;
     void* _inst;
 };
 
@@ -341,12 +353,12 @@ int main(const int argc, char** args)
         return 1;
     }
 
-    bool playback = false;
+    bool playback = true;
     if (playback) {
         // playback
 
         vgm_chip_bank_t bank;
-        bank.sn76489 = new chip_sn76489_serial_t;
+        bank.sn76489 = new chip_sn76489_serial_t{SERIAL_COM1};
 
         vgm_t vgm;
         if (!vgm.init(&stream, &bank)) {
